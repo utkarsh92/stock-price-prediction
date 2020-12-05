@@ -1,11 +1,13 @@
 import numpy as np
 import pandas as pd
 
-df = pd.read_csv('GOOG_total.csv', skipinitialspace=True)
-df['Date'] = pd.to_datetime(df['Date'])
+
 
 def get_dataset(train_year_start=2005,testmonths=12):
-	global df
+	
+	df = pd.read_csv('GOOG_total.csv', skipinitialspace=True)
+	df['Date'] = pd.to_datetime(df['Date'])
+
 	train_start_date = str(train_year_start) + '-01-01'
 	mask = (df['Date'] >= train_start_date)
 	df = df[mask]
