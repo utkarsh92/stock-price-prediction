@@ -1,58 +1,68 @@
+from create_dataset import get_dataset
 import pandas as pd
 import numpy as np
-# from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import LinearRegression, Ridge
 from sklearn.preprocessing import MinMaxScaler, StandardScaler
-from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 import matplotlib.pyplot as plt
 plt.style.use('bmh')
 
-#load data from csv
-df = pd.read_csv('GOOG.csv', skipinitialspace=True)
-df = df.tail(504)
-print(df)
 
-#visualize data
-# plt.figure(figsize=(16,8))
-# plt.title('google')
-# plt.xlabel('days')
-# plt.ylabel('close price')
-# plt.plot(df['Close'])
-# plt.show()
+def get_sets(start_year, test_months):
+    df_train, df_test = get_dataset(start_year, test_months)
 
-test_days = 25
-x = np.array(df[['Open', 'High', 'Low', 'Volume']])[:-test_days]
-y = np.array(df['Close'])[:-test_days]
+    x_train = np.array(df_train[['Open', 'High', 'Low', 'Volume']])
+    y_train = np.array(df_train['Close'])
+    x_test = np.array(df_test[['Open', 'High', 'Low', 'Volume']])
+    y_test = np.array(df_test['Close'])
+    dates = np.array(df_test['Date'].dt.date)
+    # print(type(df_test['Date']))
+    # print(dates[0])
 
-# x_train, x_dev, y_train, y_dev = train_test_split(x, y, test_size=0.2)
-x_train = x
-y_train = y
-x_test = np.array(df[['Open', 'High', 'Low', 'Volume']].tail(test_days))
-y_test = np.array(df['Close'].tail(test_days))
-dates = np.array(df['Date'].tail(test_days))
+    return x_train, y_train, x_test, y_test, dates
 
-print(x_train.shape, y_train.shape, x_test.shape, y_test.shape)
+test_list = [1]
 
-# scalar = MinMaxScaler().fit(x_train)
-# lreg = LinearRegression().fit(scalar.transform(x_train), y_train)
-# y_hat = lreg.predict(scalar.transform(x_test))
+for x in test_list:
 
+    print("\n-------",x,"--------\n")
 
-# lreg = Ridge(alpha=.0001).fit(scalar.transform(x_train), y_train)
-# y_hat = lreg.predict(scalar.transform(x_test))
+    train_loss = []
+    test_loss = []
 
-lreg = LinearRegression().fit(x_train, y_train)
-y_hat = lreg.predict(x_test)
+    for i in range(2005, 2019, 1):
+        print(i)
+        x_train, y_train, x_test, y_test, dates = get_sets(i, x)
 
-print("mse loss: ", np.mean(np.power(y_hat - y_test, 2)))
-# exit()
+        lreg = LinearRegression()
+        lreg.fit(x_train, y_train)
 
-plt.figure(figsize=(16,8))
-plt.title('google data for ' + dates[0] + ' to ' + dates[-1])
-plt.xlabel('days')
-plt.ylabel('close price')
-# plt.plot(y_train)
-plt.plot(y_test)
-plt.plot(y_hat)
-plt.legend(['y_test', 'y_hat'])
-plt.show()
+        #train
+        y_hat = lreg.predict(x_train)
+        loss = mean_squared_error(y_train, y_hat)
+        train_loss.append([i, loss])
+        print("train:", loss)
+
+        #test
+        y_hat = lreg.predict(x_test)
+        loss = mean_squared_error(y_test, y_hat)
+        test_loss.append([i, loss])
+        print("test:", loss)
+
+    train_loss = np.array(train_loss)
+    test_loss = np.array(test_loss)
+    # print('Train:\n', train_loss)
+    # print('Test:\n', test_loss)
+
+    # print('Diff:\n', test_loss[:,1] / train_loss[:, 1])
+    # exit()
+
+    plt.figure(figsize=(16, 8))
+    plt.title('MSE loss plot')
+    plt.xlabel('Year')
+    plt.ylabel('Loss')
+    plt.plot(train_loss[:,0], train_loss[:,1])
+    plt.plot(test_loss[:,0], test_loss[:,1])
+    plt.legend(['train_mse', 'test_mse'])
+    # plt.show()
+    plt.savefig('/mnt/c/Users/utin9/Desktop/test_simple/' + str(x) + '.png')
